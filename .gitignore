@@ -1,0 +1,13 @@
+!.gitignore
+
+my-app/configmap/config/*.config
+my-app/configmap/hosts/hosts
+my-app/configmap/settings/*.config
+
+/my-app/configmap/config/*.config
+/my-app/configmap/hosts/hosts
+/my-app/configmap/settings/*.config
+
+./my-app/configmap/config/*.config
+./my-app/configmap/hosts/hosts
+./my-app/configmap/settings/*.config

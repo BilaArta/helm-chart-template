@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "my-app.fullname" . }}
+  labels:
+    {{- include "my-app.labels" . | nindent 4 }}
+  namespace: {{ .Values.namespace }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "my-app.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "my-app.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "my-app.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ include "my-app.name" . }}-aither
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.volumeMounts.enabled }}
+          volumeMounts:
+            {{include "my-app.configVolume" . | nindent 12}}
+            {{include "my-app.settingVolume" . | nindent 12}}
+            {{include "my-app.hostsVolume" . | nindent 12}}
+            {{include "my-app.logVolume" . | nindent 12}}
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.volumeMounts.enabled }}
+      volumes:
+        - name: {{ include "my-app.name" . }}-config-volume
+          configMap:
+            name: aither-config
+        - name: {{ include "my-app.name" . }}-settings-volume
+          configMap:
+            name: aither-settings-config
+        - name: hosts-configmap
+          configMap:
+            name: hosts-acdb-configmap
+            items:
+              - key: hosts
+                path: hosts
+        - name: aither-log-volume
+          hostPath:
+            path: C:\aither\log\{{ include "my-app.name" . }}
+            type: DirectoryOrCreate
+      {{- end}}
